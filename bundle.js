@@ -62,11 +62,10 @@
 	let inherits = __webpack_require__(7).inherits;
 	let randomVec = __webpack_require__(7).randomVec;
 
-	console.log(__webpack_require__(7));
 	function Asteroid (options){
 	  this.COLOR = "grey";
-	  this.RADIUS = 40;
-	  MovingObject.call(this, {pos: options.pos, color: this.COLOR, radius: this.RADIUS, vel: randomVec(10)});
+	  this.RADIUS = 20;
+	  MovingObject.call(this, {pos: options.pos, color: this.COLOR, radius: this.RADIUS, vel: randomVec(3)});
 	}
 	inherits(Asteroid, MovingObject);
 
@@ -78,7 +77,7 @@
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Game = __webpack_require__(4);
+	const Game = __webpack_require__(4).Game;
 
 
 	function GameView(ctx){
@@ -90,7 +89,7 @@
 	  setInterval(()=>{
 	    this.game.moveObjects();
 	    this.game.draw(this.ctx);
-	  },20);
+	  }, 20);
 	};
 
 	module.exports = GameView;
@@ -108,9 +107,9 @@
 	  this.asteroids = [];
 	  this.addAsteroids();
 	}
-	Game.DIM_X = 800;
-	Game.DIM_Y = 800;
-	Game.NUM_ASTEROIDS = 20;
+	const DIM_X = 800;
+	const DIM_Y = 800;
+	const NUM_ASTEROIDS = 10;
 
 	Game.prototype.addAsteroids = function(){
 	  for (let i =0; i < NUM_ASTEROIDS; i++){
@@ -137,12 +136,19 @@
 	  });
 	};
 
-	module.exports = Game;
+	module.exports = {
+	  Game,
+	  DIM_X,
+	  DIM_Y,
+	  NUM_ASTEROIDS,
+	};
 
 
 /***/ },
 /* 5 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
+
+	let Utils = __webpack_require__(7);
 
 	function MovingObject(options) {
 	  this.pos = options.pos;
@@ -168,7 +174,13 @@
 
 	MovingObject.prototype.move = function() {
 	  this.pos[0] += this.vel[0];
+	  if (this.pos[0] > Utils.dims[0]) {
+	    this.pos[0] = 0;
+	  }
 	  this.pos[1] += this.vel[1];
+	  if (this.pos[1] > Utils.dims[1]) {
+	    this.pos[1] = 0;
+	  }
 	};
 
 	module.exports = MovingObject;
@@ -196,6 +208,8 @@
 	  childClass.prototype.constructor = childClass;
 	}
 
+	let dims = [800,800];
+
 
 	function randomVec(length){
 	  let x = Math.random() * length;
@@ -207,7 +221,8 @@
 	  Dist,
 	  Norm,
 	  inherits,
-	  randomVec
+	  randomVec,
+	  dims
 	};
 
 
