@@ -89,9 +89,9 @@
 
 	inherits(Bullet, MovingObject);
 
-	Bullet.prototype.move = function () {
-	  this.pos[0] += this.vel[0];
-	  this.pos[1] += this.vel[1];
+	Bullet.prototype.move = function (dt) {
+	  this.pos[0] += this.vel[0] * dt;
+	  this.pos[1] += this.vel[1] * dt;
 	};
 	module.exports = Bullet;
 
@@ -105,15 +105,32 @@
 	function GameView(ctx){
 	  this.game = new Game();
 	  this.ctx = ctx;
+	  this.lastTime = 0;
 	}
 
 	GameView.prototype.start = function(){
 	  this.game.bindKeyHandlers();
-	  setInterval(()=>{
-	    this.game.moveObjects();
-	    this.game.draw(this.ctx);
-	    this.game.checkCollisions();
-	  }, 20);
+	  this.animate(0);
+	};
+	GameView.prototype.animate = function (time) {
+	  let dt = time  - this.lastTime;
+	  this.lastTime = time;
+	  this.game.moveObjects(dt / 20);
+	  this.game.draw(this.ctx);
+	  this.game.checkCollisions();
+	  if (!this.game.gameOver){
+	    window.requestAnimationFrame((dTime) => {
+	      this.animate(dTime);
+	    });
+	  } else {
+	    this.ctx.fillStyle = "white";
+	    this.ctx.font = "italic "+24+"pt Arial ";
+	    this.ctx.fillText(`Game Over \n Press Enter to restart`, 100,200 );
+	    key('enter', ()=>{
+	      this.game = new Game();
+	      this.start();
+	    });
+	  }
 	};
 
 	module.exports = GameView;
@@ -134,11 +151,15 @@
 	  this.addAsteroids();
 	  this.ship = new Ship({pos: this.randomPosition(), game: this});
 	  this.bullets = [];
+	  this.lives = 5;
+	  this.score = 0;
+	  this.gameOver = false;
+	  this.level = 1;
 	}
-	const NUM_ASTEROIDS = 10;
+	const NUM_ASTEROIDS = 3;
 
-	Game.prototype.addAsteroids = function(){
-	  for (let i =0; i < NUM_ASTEROIDS; i++){
+	Game.prototype.addAsteroids = function(num = NUM_ASTEROIDS){
+	  for (let i =0; i < num; i++){
 	    let pos = this.randomPosition();
 
 	    let asteroid = new Asteroid({pos: pos});
@@ -149,15 +170,23 @@
 
 	Game.prototype.draw = function(ctx){
 	  ctx.clearRect(0,0,Utils.dims[0], Utils.dims[1]);
+	  ctx.fillStyle = "black";
+	  ctx.fillRect(0, 0, Utils.dims[0], Utils.dims[1])
 	  this.allObjects().forEach(asteroid => {
 	    asteroid.draw(ctx);
 	  });
+	  ctx.fillStyle = "white";
+	  ctx.fillRect(0,0,175,22);
+	  ctx.fillStyle = "black";
+	  ctx.font = "italic "+14+"pt Arial ";
+	  ctx.fillText(`Lives: ${this.lives}, Score: ${this.score}`, 10,20 );
+
 	};
 
 
-	Game.prototype.moveObjects = function() {
+	Game.prototype.moveObjects = function(dt) {
 	  this.allObjects().forEach(asteroid => {
-	    asteroid.move();
+	    asteroid.move(dt);
 	  });
 	};
 
@@ -167,11 +196,14 @@
 	      if (asteroid1.isCollidedWith(bullet)) {
 	        this.remove(asteroid1);
 	        this.remove(bullet);
+	        this.score +=1;
 	      }
 	    });
 	    if (asteroid1.isCollidedWith(this.ship)){
 	      this.ship.pos = this.randomPosition();
 	      this.ship.vel = [0,0];
+	      this.lives -= 1;
+	      if (this.lives === 0){this.gameOver = true;}
 	    }
 	  });
 	};
@@ -188,6 +220,10 @@
 	  let right = arr.slice(idx + 1);
 	  if (obj instanceof Asteroid) {
 	    this.asteroids = [...left, ...right];
+	    if (this.asteroids.length === 0){
+	      this.level += 1;
+	      this.addAsteroids(this.level * NUM_ASTEROIDS);
+	    }
 	  } else if (obj instanceof Bullet) {
 	    this.bullets = [...left, ...right];
 	  }
@@ -221,7 +257,6 @@
 	  });
 
 	  key('space', ()=>{
-	    console.log("Space hit");
 	    this.ship.fireBullet();
 	  });
 	};
@@ -259,9 +294,9 @@
 	  ctx.fill();
 	};
 
-	MovingObject.prototype.move = function() {
-	  this.pos[0] += this.vel[0];
-	  this.pos[1] += this.vel[1];
+	MovingObject.prototype.move = function(dt) {
+	  this.pos[0] += this.vel[0] * dt;
+	  this.pos[1] += this.vel[1] * dt;
 	  if (this.pos[0] > Utils.dims[0]) {
 	    this.pos[0] = 0;
 	  }else if (this.pos[0] < 0){
