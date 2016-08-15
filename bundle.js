@@ -86,6 +86,7 @@
 	}
 
 	GameView.prototype.start = function(){
+	  this.game.bindKeyHandlers();
 	  setInterval(()=>{
 	    this.game.moveObjects();
 	    this.game.draw(this.ctx);
@@ -136,7 +137,7 @@
 
 
 	Game.prototype.moveObjects = function() {
-	  this.asteroids.forEach(asteroid => {
+	  this.allObjects().forEach(asteroid => {
 	    asteroid.move();
 	  });
 	};
@@ -166,6 +167,24 @@
 
 	Game.prototype.allObjects = function () {
 	  return [...this.asteroids, this.ship];
+	};
+
+	Game.prototype.bindKeyHandlers = function(){
+	  key('w', ()=>{
+	    this.ship.power([0,-1]);
+	  });
+
+	  key('a', ()=>{
+	    this.ship.power([-1,0]);
+	  });
+	  key('s', ()=>{
+	    this.ship.power([0,1]);
+
+	  });
+	  key('d', ()=>{
+	    this.ship.power([1,0]);
+
+	  });
 	};
 
 	module.exports = {
@@ -235,6 +254,12 @@
 	}
 
 	inherits(Ship, MovingObject);
+
+	Ship.prototype.power = function (impulse) {
+	  this.vel[0] += impulse[0];
+	  this.vel[1] += impulse[1];
+	};
+
 
 
 	module.exports = Ship;
